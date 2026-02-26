@@ -16,7 +16,7 @@ namespace safetyhook {
 /// @param flags The flags to use.
 /// @return The InlineHook object.
 [[nodiscard]] InlineHook SAFETYHOOK_API create_inline(
-    void* target, void* destination, InlineHook::Flags flags = InlineHook::Default);
+    void* target, void* destination, InlineHook::Flags flags = InlineHook::Default, std::function<void()> on_threads_trapped = {});
 
 /// @brief Easy to use API for creating an InlineHook.
 /// @param target The address of the function to hook.
@@ -24,8 +24,8 @@ namespace safetyhook {
 /// @param flags The flags to use.
 /// @return The InlineHook object.
 template <typename T, typename U>
-[[nodiscard]] InlineHook create_inline(T target, U destination, InlineHook::Flags flags = InlineHook::Default) {
-    return create_inline(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags);
+[[nodiscard]] InlineHook create_inline(T target, U destination, InlineHook::Flags flags = InlineHook::Default, std::function<void()> on_threads_trapped = {}) {
+    return create_inline(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags, std::move(on_threads_trapped));
 }
 
 /// @brief Easy to use API for creating a MidHook.
@@ -34,7 +34,7 @@ template <typename T, typename U>
 /// @param flags The flags to use.
 /// @return The MidHook object.
 [[nodiscard]] MidHook SAFETYHOOK_API create_mid(
-    void* target, MidHookFn destination, MidHook::Flags flags = MidHook::Default);
+    void* target, MidHookFn destination, MidHook::Flags flags = MidHook::Default, std::function<void()> on_threads_trapped = {});
 
 /// @brief Easy to use API for creating a MidHook.
 /// @param target the address of the function to hook.
@@ -42,8 +42,8 @@ template <typename T, typename U>
 /// @param flags The flags to use.
 /// @return The MidHook object.
 template <typename T>
-[[nodiscard]] MidHook create_mid(T target, MidHookFn destination, MidHook::Flags flags = MidHook::Default) {
-    return create_mid(reinterpret_cast<void*>(target), destination, flags);
+[[nodiscard]] MidHook create_mid(T target, MidHookFn destination, MidHook::Flags flags = MidHook::Default, std::function<void()> on_threads_trapped = {}) {
+    return create_mid(reinterpret_cast<void*>(target), destination, flags, std::move(on_threads_trapped));
 }
 
 /// @brief Easy to use API for creating a VmtHook.

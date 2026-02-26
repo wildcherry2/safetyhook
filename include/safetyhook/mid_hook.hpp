@@ -6,6 +6,7 @@
 #ifndef SAFETYHOOK_USE_CXXMODULES
 #include <cstdint>
 #include <memory>
+#include <functional>
 #else
 import std.compat;
 #endif
@@ -73,7 +74,7 @@ public:
     /// @note This will use the default global Allocator.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_mid).
     [[nodiscard]] static std::expected<MidHook, Error> create(
-        void* target, MidHookFn destination_fn, Flags flags = Default);
+        void* target, MidHookFn destination_fn, Flags flags = Default, std::function<void()> on_threads_trapped = {});
 
     /// @brief Creates a new MidHook object.
     /// @param target The address of the function to hook.
@@ -84,8 +85,8 @@ public:
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_mid).
     template <typename T>
     [[nodiscard]] static std::expected<MidHook, Error> create(
-        T target, MidHookFn destination_fn, Flags flags = Default) {
-        return create(reinterpret_cast<void*>(target), destination_fn, flags);
+        T target, MidHookFn destination_fn, Flags flags = Default, std::function<void()> on_threads_trapped = {}) {
+        return create(reinterpret_cast<void*>(target), destination_fn, flags, std::move(on_threads_trapped));
     }
 
     /// @brief Creates a new MidHook object with a given Allocator.
@@ -96,7 +97,7 @@ public:
     /// @return The MidHook object or a MidHook::Error if an error occurred.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_mid).
     [[nodiscard]] static std::expected<MidHook, Error> create(
-        const std::shared_ptr<Allocator>& allocator, void* target, MidHookFn destination_fn, Flags flags = Default);
+        const std::shared_ptr<Allocator>& allocator, void* target, MidHookFn destination_fn, Flags flags = Default, std::function<void()> on_threads_trapped = {});
 
     /// @brief Creates a new MidHook object with a given Allocator.
     /// @tparam T The type of the function to hook.
@@ -108,8 +109,8 @@ public:
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_mid).
     template <typename T>
     [[nodiscard]] static std::expected<MidHook, Error> create(
-        const std::shared_ptr<Allocator>& allocator, T target, MidHookFn destination_fn, Flags flags = Default) {
-        return create(allocator, reinterpret_cast<void*>(target), destination_fn, flags);
+        const std::shared_ptr<Allocator>& allocator, T target, MidHookFn destination_fn, Flags flags = Default, std::function<void()> on_threads_trapped = {}) {
+        return create(allocator, reinterpret_cast<void*>(target), destination_fn, flags, std::move(on_threads_trapped));
     }
 
     MidHook() = default;
@@ -160,6 +161,6 @@ private:
     MidHookFn m_destination{};
 
     std::expected<void, Error> setup(
-        const std::shared_ptr<Allocator>& allocator, uint8_t* target, MidHookFn destination);
+        const std::shared_ptr<Allocator>& allocator, uint8_t* target, MidHookFn destination, std::function<void()> on_threads_trapped);
 };
 } // namespace safetyhook

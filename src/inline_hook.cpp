@@ -1,4 +1,5 @@
 #include <iterator>
+#include <utility>
 
 #if __has_include("Zydis/Zydis.h")
 #include "Zydis/Zydis.h"
@@ -114,16 +115,16 @@ static bool decode(ZydisDecodedInstruction* ix, uint8_t* ip) {
     return ZYAN_SUCCESS(ZydisDecoderDecodeInstruction(&decoder, nullptr, ip, 15, ix));
 }
 
-std::expected<InlineHook, InlineHook::Error> InlineHook::create(void* target, void* destination, Flags flags) {
-    return create(Allocator::global(), target, destination, flags);
+std::expected<InlineHook, InlineHook::Error> InlineHook::create(void* target, void* destination, Flags flags, std::function<void()> on_threads_trapped) {
+    return create(Allocator::global(), target, destination, flags, std::move(on_threads_trapped));
 }
 
 std::expected<InlineHook, InlineHook::Error> InlineHook::create(
-    const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags) {
+    const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags, std::function<void()> on_threads_trapped) {
     InlineHook hook{};
 
     if (const auto setup_result =
-            hook.setup(allocator, reinterpret_cast<uint8_t*>(target), reinterpret_cast<uint8_t*>(destination));
+            hook.setup(allocator, reinterpret_cast<uint8_t*>(target), reinterpret_cast<uint8_t*>(destination), std::move(on_threads_trapped));
         !setup_result) {
         return std::unexpected{setup_result.error()};
     }
@@ -174,9 +175,10 @@ void InlineHook::reset() {
 }
 
 std::expected<void, InlineHook::Error> InlineHook::setup(
-    const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination) {
+    const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination, std::function<void()> on_threads_trapped) {
     m_target = target;
     m_destination = destination;
+    m_on_threads_trapped = std::move(on_threads_trapped);
 
     if (auto e9_result = e9_hook(allocator); !e9_result) {
 #if SAFETYHOOK_ARCH_X86_64
@@ -399,6 +401,8 @@ std::expected<void, InlineHook::Error> InlineHook::enable() {
                 error = result.error();
             }
         }
+
+        if (!error && m_on_threads_trapped) m_on_threads_trapped();
 #endif
     });
 

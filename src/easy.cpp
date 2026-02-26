@@ -1,16 +1,16 @@
 #include "safetyhook/easy.hpp"
 
 namespace safetyhook {
-InlineHook create_inline(void* target, void* destination, InlineHook::Flags flags) {
-    if (auto hook = InlineHook::create(target, destination, flags)) {
+InlineHook create_inline(void* target, void* destination, InlineHook::Flags flags, std::function<void()> on_threads_trapped) {
+    if (auto hook = InlineHook::create(target, destination, flags, std::move(on_threads_trapped))) {
         return std::move(*hook);
     } else {
         return {};
     }
 }
 
-MidHook create_mid(void* target, MidHookFn destination, MidHook::Flags flags) {
-    if (auto hook = MidHook::create(target, destination, flags)) {
+MidHook create_mid(void* target, MidHookFn destination, MidHook::Flags flags, std::function<void()> on_threads_trapped) {
+    if (auto hook = MidHook::create(target, destination, flags, std::move(on_threads_trapped))) {
         return std::move(*hook);
     } else {
         return {};

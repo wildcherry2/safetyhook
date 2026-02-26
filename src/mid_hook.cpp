@@ -68,15 +68,15 @@ constexpr std::array<uint8_t, 171> asm_data = {0xFF, 0x35, 0xA7, 0x00, 0x00, 0x0
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 #endif
 
-std::expected<MidHook, MidHook::Error> MidHook::create(void* target, MidHookFn destination, Flags flags) {
-    return create(Allocator::global(), target, destination, flags);
+std::expected<MidHook, MidHook::Error> MidHook::create(void* target, MidHookFn destination, Flags flags, std::function<void()> on_threads_trapped) {
+    return create(Allocator::global(), target, destination, flags, std::move(on_threads_trapped));
 }
 
 std::expected<MidHook, MidHook::Error> MidHook::create(
-    const std::shared_ptr<Allocator>& allocator, void* target, MidHookFn destination, Flags flags) {
+    const std::shared_ptr<Allocator>& allocator, void* target, MidHookFn destination, Flags flags, std::function<void()> on_threads_trapped) {
     MidHook hook{};
 
-    if (const auto setup_result = hook.setup(allocator, reinterpret_cast<uint8_t*>(target), destination);
+    if (const auto setup_result = hook.setup(allocator, reinterpret_cast<uint8_t*>(target), destination, std::move(on_threads_trapped));
         !setup_result) {
         return std::unexpected{setup_result.error()};
     }
@@ -113,7 +113,7 @@ void MidHook::reset() {
 }
 
 std::expected<void, MidHook::Error> MidHook::setup(
-    const std::shared_ptr<Allocator>& allocator, uint8_t* target, MidHookFn destination_fn) {
+    const std::shared_ptr<Allocator>& allocator, uint8_t* target, MidHookFn destination_fn, std::function<void()> on_threads_trapped) {
     m_target = target;
     m_destination = destination_fn;
 
@@ -137,7 +137,7 @@ std::expected<void, MidHook::Error> MidHook::setup(
     store(m_stub.data() + 0x59, m_stub.data() + m_stub.size() - 8);
 #endif
 
-    auto hook_result = InlineHook::create(allocator, m_target, m_stub.data(), InlineHook::StartDisabled);
+    auto hook_result = InlineHook::create(allocator, m_target, m_stub.data(), InlineHook::StartDisabled, std::move(on_threads_trapped));
 
     if (!hook_result) {
         m_stub.free();

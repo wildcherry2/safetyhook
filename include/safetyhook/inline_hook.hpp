@@ -10,6 +10,7 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+#include <functional>
 #else
 import std.compat;
 #endif
@@ -122,11 +123,12 @@ public:
     /// @param target The address of the function to hook.
     /// @param destination The destination address.
     /// @param flags The flags to use.
+    /// @param on_threads_trapped Callback to invoke after the detour is installed but before the thread trap is released.
     /// @return The InlineHook or an InlineHook::Error if an error occurred.
     /// @note This will use the default global Allocator.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     [[nodiscard]] static std::expected<InlineHook, Error> create(
-        void* target, void* destination, Flags flags = Default);
+        void* target, void* destination, Flags flags = Default, std::function<void()> on_threads_trapped = {});
 
     /// @brief Create an inline hook.
     /// @param target The address of the function to hook.
@@ -136,8 +138,8 @@ public:
     /// @note This will use the default global Allocator.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     template <typename T, typename U>
-    [[nodiscard]] static std::expected<InlineHook, Error> create(T target, U destination, Flags flags = Default) {
-        return create(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags);
+    [[nodiscard]] static std::expected<InlineHook, Error> create(T target, U destination, Flags flags = Default, std::function<void()> on_threads_trapped = {}) {
+        return create(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags, std::move(on_threads_trapped));
     }
 
     /// @brief Create an inline hook with a given Allocator.
@@ -148,19 +150,20 @@ public:
     /// @return The InlineHook or an InlineHook::Error if an error occurred.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     [[nodiscard]] static std::expected<InlineHook, Error> create(
-        const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags = Default);
+        const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags = Default, std::function<void()> on_threads_trapped = {});
 
     /// @brief Create an inline hook with a given Allocator.
     /// @param allocator The allocator to use.
     /// @param target The address of the function to hook.
     /// @param destination The destination address.
     /// @param flags The flags to use.
+    /// @param on_threads_trapped Callback to invoke after the detour is installed but before the thread trap is released.
     /// @return The InlineHook or an InlineHook::Error if an error occurred.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     template <typename T, typename U>
     [[nodiscard]] static std::expected<InlineHook, Error> create(
-        const std::shared_ptr<Allocator>& allocator, T target, U destination, Flags flags = Default) {
-        return create(allocator, reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags);
+        const std::shared_ptr<Allocator>& allocator, T target, U destination, Flags flags = Default, std::function<void()> on_threads_trapped = {}) {
+        return create(allocator, reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags, std::move(on_threads_trapped));
     }
 
     InlineHook() = default;
@@ -347,11 +350,12 @@ private:
     std::vector<uint8_t> m_original_bytes{};
     uintptr_t m_trampoline_size{};
     std::recursive_mutex m_mutex{};
+    std::function<void()> m_on_threads_trapped{};
     bool m_enabled{};
     Type m_type{Type::Unset};
 
     std::expected<void, Error> setup(
-        const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination);
+        const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination, std::function<void()> on_threads_trapped);
     std::expected<void, Error> e9_hook(const std::shared_ptr<Allocator>& allocator);
 
 #if SAFETYHOOK_ARCH_X86_64
