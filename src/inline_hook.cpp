@@ -155,11 +155,13 @@ InlineHook& InlineHook::operator=(InlineHook&& other) noexcept {
         m_original_bytes = std::move(other.m_original_bytes);
         m_enabled = other.m_enabled;
         m_type = other.m_type;
+        m_on_threads_trapped = other.m_on_threads_trapped;
 
         other.m_target = nullptr;
         other.m_destination = nullptr;
         other.m_trampoline_size = 0;
         other.m_enabled = false;
+        other.m_on_threads_trapped = {};
         other.m_type = Type::Unset;
     }
 
@@ -402,8 +404,8 @@ std::expected<void, InlineHook::Error> InlineHook::enable() {
             }
         }
 
-        if (!error && m_on_threads_trapped) m_on_threads_trapped();
 #endif
+        if (!error && m_on_threads_trapped) m_on_threads_trapped();
     });
 
     if (error) {
