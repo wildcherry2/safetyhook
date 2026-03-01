@@ -1,8 +1,8 @@
 #include "safetyhook/easy.hpp"
 
 namespace safetyhook {
-InlineHook create_inline(void* target, void* destination, InlineHook::Flags flags) {
-    if (auto hook = InlineHook::create(target, destination, flags)) {
+InlineHook create_inline(void* target, void* destination, InlineHook::Flags flags, OnThunkGeneratedCallback on_thunk_generated) {
+    if (auto hook = InlineHook::create(target, destination, flags, std::move(on_thunk_generated))) {
         return std::move(*hook);
     } else {
         return {};

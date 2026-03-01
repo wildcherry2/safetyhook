@@ -16,7 +16,7 @@ namespace safetyhook {
 /// @param flags The flags to use.
 /// @return The InlineHook object.
 [[nodiscard]] InlineHook SAFETYHOOK_API create_inline(
-    void* target, void* destination, InlineHook::Flags flags = InlineHook::Default);
+    void* target, void* destination, InlineHook::Flags flags = InlineHook::Default, OnThunkGeneratedCallback on_thunk_generated = {});
 
 /// @brief Easy to use API for creating an InlineHook.
 /// @param target The address of the function to hook.
@@ -24,8 +24,8 @@ namespace safetyhook {
 /// @param flags The flags to use.
 /// @return The InlineHook object.
 template <typename T, typename U>
-[[nodiscard]] InlineHook create_inline(T target, U destination, InlineHook::Flags flags = InlineHook::Default) {
-    return create_inline(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags);
+[[nodiscard]] InlineHook create_inline(T target, U destination, InlineHook::Flags flags = InlineHook::Default, OnThunkGeneratedCallback on_thunk_generated = {}) {
+    return create_inline(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags, std::move(on_thunk_generated));
 }
 
 /// @brief Easy to use API for creating a MidHook.

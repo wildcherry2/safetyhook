@@ -1,4 +1,5 @@
 #include <iterator>
+#include <utility>
 
 #if __has_include("Zydis/Zydis.h")
 #include "Zydis/Zydis.h"
@@ -114,16 +115,16 @@ static bool decode(ZydisDecodedInstruction* ix, uint8_t* ip) {
     return ZYAN_SUCCESS(ZydisDecoderDecodeInstruction(&decoder, nullptr, ip, 15, ix));
 }
 
-std::expected<InlineHook, InlineHook::Error> InlineHook::create(void* target, void* destination, Flags flags) {
-    return create(Allocator::global(), target, destination, flags);
+std::expected<InlineHook, InlineHook::Error> InlineHook::create(void* target, void* destination, Flags flags, OnThunkGeneratedCallback on_thunk_generated) {
+    return create(Allocator::global(), target, destination, flags, std::move(on_thunk_generated));
 }
 
 std::expected<InlineHook, InlineHook::Error> InlineHook::create(
-    const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags) {
+    const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags, OnThunkGeneratedCallback on_thunk_generated) {
     InlineHook hook{};
 
     if (const auto setup_result =
-            hook.setup(allocator, reinterpret_cast<uint8_t*>(target), reinterpret_cast<uint8_t*>(destination));
+            hook.setup(allocator, reinterpret_cast<uint8_t*>(target), reinterpret_cast<uint8_t*>(destination), std::move(on_thunk_generated));
         !setup_result) {
         return std::unexpected{setup_result.error()};
     }
@@ -154,12 +155,16 @@ InlineHook& InlineHook::operator=(InlineHook&& other) noexcept {
         m_original_bytes = std::move(other.m_original_bytes);
         m_enabled = other.m_enabled;
         m_type = other.m_type;
+        m_on_thunk_generated = std::move(other.m_on_thunk_generated);
+        m_original_function_thunk_address = other.m_original_function_thunk_address;
 
         other.m_target = nullptr;
         other.m_destination = nullptr;
         other.m_trampoline_size = 0;
         other.m_enabled = false;
         other.m_type = Type::Unset;
+        other.m_on_thunk_generated = {};
+        other.m_original_function_thunk_address = 0;
     }
 
     return *this;
@@ -174,9 +179,10 @@ void InlineHook::reset() {
 }
 
 std::expected<void, InlineHook::Error> InlineHook::setup(
-    const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination) {
+    const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination, OnThunkGeneratedCallback on_thunk_generated) {
     m_target = target;
     m_destination = destination;
+    m_on_thunk_generated = std::move(on_thunk_generated);
 
     if (auto e9_result = e9_hook(allocator); !e9_result) {
 #if SAFETYHOOK_ARCH_X86_64
@@ -400,6 +406,11 @@ std::expected<void, InlineHook::Error> InlineHook::enable() {
             }
         }
 #endif
+
+        if (!error) {
+            const auto cb_result = m_on_thunk_generated ? m_on_thunk_generated(m_trampoline.address()) : 0;
+            m_original_function_thunk_address = cb_result ? cb_result : m_trampoline.address();
+        }
     });
 
     if (error) {

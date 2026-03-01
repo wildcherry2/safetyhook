@@ -10,8 +10,11 @@ import std.compat;
 #endif
 
 #include "safetyhook/common.hpp"
+#include <functional>
 
 namespace safetyhook {
+using OnThunkGeneratedCallback = std::function<uintptr_t(uintptr_t)>;
+
 template <typename T> constexpr void store(uint8_t* address, const T& value) {
     std::copy_n(reinterpret_cast<const uint8_t*>(&value), sizeof(T), address);
 }

@@ -126,7 +126,7 @@ public:
     /// @note This will use the default global Allocator.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     [[nodiscard]] static std::expected<InlineHook, Error> create(
-        void* target, void* destination, Flags flags = Default);
+        void* target, void* destination, Flags flags = Default, OnThunkGeneratedCallback on_thunk_generated = {});
 
     /// @brief Create an inline hook.
     /// @param target The address of the function to hook.
@@ -136,8 +136,8 @@ public:
     /// @note This will use the default global Allocator.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     template <typename T, typename U>
-    [[nodiscard]] static std::expected<InlineHook, Error> create(T target, U destination, Flags flags = Default) {
-        return create(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags);
+    [[nodiscard]] static std::expected<InlineHook, Error> create(T target, U destination, Flags flags = Default, OnThunkGeneratedCallback on_thunk_generated = {}) {
+        return create(reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags, std::move(on_thunk_generated));
     }
 
     /// @brief Create an inline hook with a given Allocator.
@@ -148,7 +148,7 @@ public:
     /// @return The InlineHook or an InlineHook::Error if an error occurred.
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     [[nodiscard]] static std::expected<InlineHook, Error> create(
-        const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags = Default);
+        const std::shared_ptr<Allocator>& allocator, void* target, void* destination, Flags flags = Default, OnThunkGeneratedCallback on_thunk_generated = {});
 
     /// @brief Create an inline hook with a given Allocator.
     /// @param allocator The allocator to use.
@@ -159,8 +159,8 @@ public:
     /// @note If you don't care about error handling, use the easy API (safetyhook::create_inline).
     template <typename T, typename U>
     [[nodiscard]] static std::expected<InlineHook, Error> create(
-        const std::shared_ptr<Allocator>& allocator, T target, U destination, Flags flags = Default) {
-        return create(allocator, reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags);
+        const std::shared_ptr<Allocator>& allocator, T target, U destination, Flags flags = Default, OnThunkGeneratedCallback on_thunk_generated = {}) {
+        return create(allocator, reinterpret_cast<void*>(target), reinterpret_cast<void*>(destination), flags, std::move(on_thunk_generated));
     }
 
     InlineHook() = default;
@@ -275,6 +275,10 @@ public:
         return original<RetT (*)(Args...)>()(args...);
     }
 
+    template<typename RetT = void, typename... Args> RetT unsafe_call_intermediate(Args... args) {
+        return reinterpret_cast<RetT(*)(Args...)>(m_original_function_thunk_address)(args...);
+    }
+
     /// @brief Calls the original function.
     /// @tparam RetT The return type of the function.
     /// @tparam ...Args The argument types of the function.
@@ -346,12 +350,14 @@ private:
     Allocation m_trampoline{};
     std::vector<uint8_t> m_original_bytes{};
     uintptr_t m_trampoline_size{};
+    uintptr_t m_original_function_thunk_address{};
+    OnThunkGeneratedCallback m_on_thunk_generated{};
     std::recursive_mutex m_mutex{};
     bool m_enabled{};
     Type m_type{Type::Unset};
 
     std::expected<void, Error> setup(
-        const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination);
+        const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination, OnThunkGeneratedCallback on_thunk_generated);
     std::expected<void, Error> e9_hook(const std::shared_ptr<Allocator>& allocator);
 
 #if SAFETYHOOK_ARCH_X86_64
