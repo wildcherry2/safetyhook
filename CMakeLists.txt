@@ -30,6 +30,7 @@ option(SAFETYHOOK_BUILD_TEST "" OFF)
 option(SAFETYHOOK_BUILD_EXAMPLES "" OFF)
 option(SAFETYHOOK_AMALGAMATE "" OFF)
 option(SAFETYHOOK_FETCH_ZYDIS "" ON)
+option(SAFETYHOOK_FETCH_BINDINGTHUNK "" ON)
 option(SAFETYHOOK_USE_CXXMODULES "" OFF)
 
 project(safetyhook)
@@ -85,6 +86,21 @@ if(SAFETYHOOK_FETCH_ZYDIS) # fetch-zydis
 	FetchContent_MakeAvailable(Zydis)
 
 endif()
+if(SAFETYHOOK_FETCH_BINDINGTHUNK) # fetch-binding-thunk
+	message(STATUS "Fetching BindingThunk (3a056ea42c83063faa67fab15ee25a3650d55dd0)...")
+	FetchContent_Declare(BindingThunk
+		GIT_REPOSITORY
+			"https://github.com/wildcherry2/BindingThunk.git"
+		GIT_TAG
+			3a056ea42c83063faa67fab15ee25a3650d55dd0
+		GIT_SHALLOW
+			ON
+		EXCLUDE_FROM_ALL
+			ON
+	)
+	FetchContent_MakeAvailable(BindingThunk)
+
+endif()
 # Packages
 if(SAFETYHOOK_BUILD_DOCS) # build-docs
 	find_package(Doxygen REQUIRED)
@@ -107,6 +123,7 @@ endif()
 set(safetyhook_SOURCES
 	"src/allocator.cpp"
 	"src/easy.cpp"
+	"src/imf_hook.cpp"
 	"src/inline_hook.cpp"
 	"src/mid_hook.cpp"
 	"src/os.linux.cpp"
@@ -174,6 +191,7 @@ target_include_directories(safetyhook PUBLIC
 
 target_link_libraries(safetyhook PUBLIC
 	Zydis
+	BindingThunk
 )
 
 if(SAFETYHOOK_USE_CXXMODULES)

@@ -11,6 +11,7 @@ SAFETYHOOK_BUILD_TEST = false
 SAFETYHOOK_BUILD_EXAMPLES = false
 SAFETYHOOK_AMALGAMATE = false
 SAFETYHOOK_FETCH_ZYDIS = true
+SAFETYHOOK_FETCH_BINDINGTHUNK = true
 SAFETYHOOK_USE_CXXMODULES = false
 
 [conditions]
@@ -23,6 +24,8 @@ amalgamate = "SAFETYHOOK_AMALGAMATE"
 build-amalgamate-test = "SAFETYHOOK_BUILD_TEST AND SAFETYHOOK_AMALGAMATE"
 fetch-zydis = "SAFETYHOOK_FETCH_ZYDIS"
 find-zydis = "(NOT SAFETYHOOK_FETCH_ZYDIS)"
+fetch-binding-thunk = "SAFETYHOOK_FETCH_BINDINGTHUNK"
+find-binding-thunk = "(NOT SAFETYHOOK_FETCH_BINDINGTHUNK)"
 
 [fetch-content.ut]
 condition = "build-test"
@@ -50,6 +53,13 @@ option(ZYDIS_BUILD_DOXYGEN "" OFF)
 """
 EXCLUDE_FROM_ALL = true
 
+[fetch-content.BindingThunk]
+condition = "fetch-binding-thunk"
+git = "https://github.com/wildcherry2/BindingThunk.git"
+tag = "3a056ea42c83063faa67fab15ee25a3650d55dd0"
+shallow = true
+EXCLUDE_FROM_ALL = true
+
 [find-package.Doxygen]
 condition = "build-docs"
 required = true
@@ -72,7 +82,7 @@ include-directories = [
 ]
 compile-features = ["cxx_std_23"]
 alias = "safetyhook::safetyhook"
-link-libraries = ["Zydis"]
+link-libraries = ["Zydis", "BindingThunk"]
 msvc.private-compile-options = ["/permissive-", "/W4", "/w14640", "/wd4251"]
 clang.private-compile-options = ["-Wall", "-Wextra", "-Wshadow", "-Wnon-virtual-dtor", "-pedantic"]
 gcc.private-compile-options = ["-Wall", "-Wextra", "-Wshadow", "-Wnon-virtual-dtor", "-pedantic"]

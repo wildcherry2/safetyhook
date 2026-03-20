@@ -20,7 +20,7 @@ import std.compat;
 
 namespace safetyhook {
 /// @brief An inline hook.
-class SAFETYHOOK_API InlineHook {
+class SAFETYHOOK_API InlineHook final {
 public:
     /// @brief Error type for InlineHook.
     struct Error {
@@ -168,7 +168,7 @@ public:
     InlineHook(InlineHook&& other) noexcept;
     InlineHook& operator=(const InlineHook&) = delete;
     InlineHook& operator=(InlineHook&& other) noexcept;
-    virtual ~InlineHook();
+    ~InlineHook();
 
     /// @brief Reset the hook.
     /// @details This will restore the original function and remove the hook.
@@ -332,7 +332,7 @@ public:
     /// @brief Check if the hook is enabled.
     [[nodiscard]] bool enabled() const { return m_enabled; }
 
-protected:
+private:
     friend class MidHook;
 
     enum class Type {
@@ -350,7 +350,7 @@ protected:
     bool m_enabled{};
     Type m_type{Type::Unset};
 
-    virtual std::expected<void, Error> setup(
+    std::expected<void, Error> setup(
         const std::shared_ptr<Allocator>& allocator, uint8_t* target, uint8_t* destination);
     std::expected<void, Error> e9_hook(const std::shared_ptr<Allocator>& allocator);
 
@@ -358,6 +358,6 @@ protected:
     std::expected<void, Error> ff_hook(const std::shared_ptr<Allocator>& allocator);
 #endif
 
-    virtual void destroy();
+    void destroy();
 };
 } // namespace safetyhook
