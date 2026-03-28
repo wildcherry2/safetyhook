@@ -87,12 +87,12 @@ if(SAFETYHOOK_FETCH_ZYDIS) # fetch-zydis
 
 endif()
 if(SAFETYHOOK_FETCH_BINDINGTHUNK) # fetch-binding-thunk
-	message(STATUS "Fetching BindingThunk (3a056ea42c83063faa67fab15ee25a3650d55dd0)...")
+	message(STATUS "Fetching BindingThunk (2a471481f4297ee97bc40c8fd731a5811e97e130)...")
 	FetchContent_Declare(BindingThunk
 		GIT_REPOSITORY
 			"https://github.com/wildcherry2/BindingThunk.git"
 		GIT_TAG
-			3a056ea42c83063faa67fab15ee25a3650d55dd0
+			2a471481f4297ee97bc40c8fd731a5811e97e130
 		GIT_SHALLOW
 			ON
 		EXCLUDE_FROM_ALL

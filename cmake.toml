@@ -56,7 +56,7 @@ EXCLUDE_FROM_ALL = true
 [fetch-content.BindingThunk]
 condition = "fetch-binding-thunk"
 git = "https://github.com/wildcherry2/BindingThunk.git"
-tag = "3a056ea42c83063faa67fab15ee25a3650d55dd0"
+tag = "2a471481f4297ee97bc40c8fd731a5811e97e130"
 shallow = true
 EXCLUDE_FROM_ALL = true
 
